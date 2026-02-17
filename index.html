@@ -6,7 +6,7 @@
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #050505; overflow: hidden; font-family: 'Courier New', monospace; color: white; }
         
-        /* THE ENEMY (With Falling Animation) */
+        /* THE ENEMY */
         #enemy {
             position: absolute; top: 20%; left: 50%; transform: translateX(-50%);
             width: 300px; height: 400px;
@@ -14,7 +14,7 @@
             filter: blur(10px); animation: breathe 3s ease-in-out infinite;
             transition: all 1s cubic-bezier(0.5, 0, 0.5, 1);
         }
-        #enemy.dead { transform: translateX(-50%) translateY(100vh) rotate(15deg); opacity: 0; }
+        #enemy.dead { transform: translateX(-50%) translateY(100vh) rotate(20deg); opacity: 0; }
         .eye {
             position: absolute; top: 30%; width: 20px; height: 10px;
             background: #ff0000; border-radius: 50%; box-shadow: 0 0 20px #ff0000;
@@ -27,26 +27,44 @@
             50% { transform: translateX(-50%) scale(1.15); opacity: 1; }
         }
 
-        /* THE GUN (Sideways Position) */
+        /* DETAILED CSS GUN */
         #gun-container {
-            position: absolute; bottom: 10%; right: -50px; 
-            width: 300px; height: 100px; transition: all 0.8s ease-in-out; z-index: 10;
-            transform: rotate(-90deg); /* Player holds it sideways against their head */
+            position: absolute; bottom: -50px; left: 50%; 
+            width: 120px; height: 250px; transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); 
+            z-index: 10; transform: translateX(-50%) rotate(0deg); /* Player Position: pointing at mouth */
         }
-        .barrel { width: 150px; height: 50px; background: #222; position: absolute; left: 0; border-radius: 5px; border: 2px solid #111; }
-        .cylinder { width: 70px; height: 70px; background: #333; position: absolute; right: 80px; top: -10px; border-radius: 10px; border: 3px solid #111; }
+        .barrel { width: 40px; height: 160px; background: #222; margin: 0 auto; border-radius: 5px; border: 2px solid #111; position: relative; }
+        .cylinder { width: 70px; height: 80px; background: #333; margin: -10px auto; border-radius: 10px; border: 3px solid #111; position: relative; z-index: 2; }
+        .grip { width: 50px; height: 100px; background: #1a1a1a; margin: -5px auto; border-radius: 0 0 15px 15px; border: 2px solid #000; }
+        .hammer { width: 10px; height: 20px; background: #444; position: absolute; top: 140px; left: 55px; border-radius: 5px; }
+
+        /* Enemy Hand: Sideways to head */
+        #gun-container.enemy-hand { 
+            bottom: 45%; left: 65%; 
+            transform: rotate(90deg) scale(0.6); 
+        }
         
-        /* Enemy holds it sideways against their head */
-        #gun-container.enemy-hand { bottom: 50%; right: 40%; transform: rotate(90deg) scale(0.6); }
-        
-        /* Recoil */
-        .recoil { animation: kick 0.2s ease-out; }
+        /* Recoil Logic */
+        .recoil { animation: kick 0.15s ease-out; }
         .lethal-recoil { animation: lethal-kick 0.5s forwards; }
         
-        @keyframes kick { 0% { transform: rotate(-90deg) translateX(0); } 50% { transform: rotate(-90deg) translateX(40px); } 100% { transform: rotate(-90deg) translateX(0); } }
-        @keyframes lethal-kick { 0% { transform: rotate(-90deg) translateX(0); } 100% { transform: rotate(-105deg) translateX(100px); filter: brightness(3) contrast(2); } }
-        #gun-container.enemy-hand.recoil { animation: kick-enemy 0.2s ease-out; }
-        @keyframes kick-enemy { 0% { transform: rotate(90deg) scale(0.6) translateX(0); } 50% { transform: rotate(90deg) scale(0.6) translateX(40px); } 100% { transform: rotate(90deg) scale(0.6) translateX(0); } }
+        @keyframes kick { 
+            0% { transform: translateX(-50%) translateY(0); } 
+            50% { transform: translateX(-50%) translateY(60px); } 
+            100% { transform: translateX(-50%) translateY(0); } 
+        }
+        /* Adjusted kick for enemy position */
+        #gun-container.enemy-hand.recoil { animation: kick-enemy 0.15s ease-out; }
+        @keyframes kick-enemy { 
+            0% { transform: rotate(90deg) scale(0.6) translateX(0); } 
+            50% { transform: rotate(90deg) scale(0.6) translateX(80px); } 
+            100% { transform: rotate(90deg) scale(0.6) translateX(0); } 
+        }
+
+        @keyframes lethal-kick { 
+            0% { transform: translateX(-50%) translateY(0); } 
+            100% { transform: translateX(-50%) translateY(150px) rotate(20deg); filter: brightness(5) contrast(2); } 
+        }
 
         #game-ui { position: absolute; bottom: 5%; width: 100%; text-align: center; z-index: 20; }
         #scary-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('./scary.gif') center/cover; display: none; z-index: 1000; }
@@ -78,6 +96,8 @@
     <div id="gun-container">
         <div class="barrel"></div>
         <div class="cylinder"></div>
+        <div class="hammer"></div>
+        <div class="grip"></div>
     </div>
 
     <div id="game-ui">
