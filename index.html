@@ -27,16 +27,17 @@
             50% { transform: translateX(-50%) scale(1.15); opacity: 1; }
         }
 
-        /* DETAILED CSS GUN */
+        /* L-SHAPED REVOLVER DESIGN */
         #gun-container {
-            position: absolute; bottom: -50px; left: 50%; 
-            width: 120px; height: 250px; transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); 
-            z-index: 10; transform: translateX(-50%) rotate(0deg); /* Player Position: pointing at mouth */
+            position: absolute; bottom: 0; left: 50%; 
+            width: 150px; height: 250px; transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); 
+            z-index: 10; transform: translateX(-50%) rotate(0deg);
         }
-        .barrel { width: 40px; height: 160px; background: #222; margin: 0 auto; border-radius: 5px; border: 2px solid #111; position: relative; }
-        .cylinder { width: 70px; height: 80px; background: #333; margin: -10px auto; border-radius: 10px; border: 3px solid #111; position: relative; z-index: 2; }
-        .grip { width: 50px; height: 100px; background: #1a1a1a; margin: -5px auto; border-radius: 0 0 15px 15px; border: 2px solid #000; }
-        .hammer { width: 10px; height: 20px; background: #444; position: absolute; top: 140px; left: 55px; border-radius: 5px; }
+        .barrel { width: 35px; height: 160px; background: #222; border-radius: 4px; border: 2px solid #111; position: absolute; left: 57px; top: 0; }
+        .cylinder { width: 65px; height: 75px; background: #333; border-radius: 8px; border: 3px solid #111; position: absolute; left: 42px; top: 140px; z-index: 2; }
+        .grip { width: 45px; height: 90px; background: #1a1a1a; border-radius: 5px 5px 15px 15px; border: 2px solid #000; position: absolute; left: 52px; top: 205px; transform: rotate(15deg); }
+        .trigger-guard { width: 40px; height: 30px; border: 3px solid #222; border-radius: 50%; position: absolute; left: 45px; top: 185px; }
+        .hammer { width: 10px; height: 15px; background: #444; position: absolute; top: 135px; left: 70px; border-radius: 3px; }
 
         /* Enemy Hand: Sideways to head */
         #gun-container.enemy-hand { 
@@ -50,20 +51,18 @@
         
         @keyframes kick { 
             0% { transform: translateX(-50%) translateY(0); } 
-            50% { transform: translateX(-50%) translateY(60px); } 
+            50% { transform: translateX(-50%) translateY(80px); } 
             100% { transform: translateX(-50%) translateY(0); } 
         }
-        /* Adjusted kick for enemy position */
         #gun-container.enemy-hand.recoil { animation: kick-enemy 0.15s ease-out; }
         @keyframes kick-enemy { 
             0% { transform: rotate(90deg) scale(0.6) translateX(0); } 
-            50% { transform: rotate(90deg) scale(0.6) translateX(80px); } 
+            50% { transform: rotate(90deg) scale(0.6) translateX(100px); } 
             100% { transform: rotate(90deg) scale(0.6) translateX(0); } 
         }
-
         @keyframes lethal-kick { 
             0% { transform: translateX(-50%) translateY(0); } 
-            100% { transform: translateX(-50%) translateY(150px) rotate(20deg); filter: brightness(5) contrast(2); } 
+            100% { transform: translateX(-50%) translateY(200px) rotate(30deg); filter: brightness(5); } 
         }
 
         #game-ui { position: absolute; bottom: 5%; width: 100%; text-align: center; z-index: 20; }
@@ -97,6 +96,7 @@
         <div class="barrel"></div>
         <div class="cylinder"></div>
         <div class="hammer"></div>
+        <div class="trigger-guard"></div>
         <div class="grip"></div>
     </div>
 
